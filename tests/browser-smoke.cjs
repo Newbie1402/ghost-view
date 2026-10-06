@@ -1,0 +1,98 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const origin = process.env.BASE_URL || 'http://127.0.0.1:18080';
+const out = path.resolve('artifacts/screenshots');
+fs.mkdirSync(out, { recursive: true });
+let passed = 0;
+function check(value, label) { assert(value, label); passed++; console.log(`[PASS] ${label}`); }
+(async () => {
+  const browser = await chromium.launch({headless:true, ...(process.env.CHROME_PATH ? {executablePath:process.env.CHROME_PATH}: {})});
+  try {
+    for (const [kind, width, height] of [['desktop',1440,900],['mobile',390,844]]) {
+      const context = await browser.newContext({viewport:{width,height}, reducedMotion:'reduce', acceptDownloads:true});
+      const page = await context.newPage();
+      const faults=[]; page.on('pageerror',err=>faults.push(err.message));
+      const securityFaults=[]; page.on('console',msg=>{if(msg.type()==='error'&&/content security policy|violates/i.test(msg.text()))securityFaults.push(msg.text());});
+      await page.goto(origin); await page.waitForSelector('#mode-badge');
+      await page.waitForFunction(()=>document.querySelector('[data-capability="tiktok"]').textContent.includes('downloads'));
+      await page.screenshot({path:path.join(out,`${kind}-home.png`),fullPage:true});
+      check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${kind}: home has no horizontal overflow`);
+      check(await page.locator('#search-input').isVisible(),`${kind}: search visible`);
+      const delayed=async route=>{await new Promise(r=>setTimeout(r,400));await route.continue();};
+      await page.route('**/api/v1/search?*',delayed);
+      await page.locator('[data-query="alex.morgan"]').click();
+      check(await page.locator('.skeleton-grid').isVisible(),`${kind}: loading skeleton`);
+      await page.waitForSelector('.profile-name h2');
+      await page.unroute('**/api/v1/search?*',delayed);
+      check(await page.locator('.profile-name h2').textContent()==='Alex Morgan',`${kind}: public profile`);
+      check(await page.locator('.media-card').count()===4,`${kind}: gallery first page`);
+      check(await page.locator('.download-button').first().isVisible(),`${kind}: download visible`);
+      const columns=await page.locator('.media-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length);
+      check(kind==='mobile'?columns===2:columns>=3&&columns<=5,`${kind}: responsive grid`);
+      check(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${kind}: profile has no horizontal overflow`);
+      await page.screenshot({path:path.join(out,`${kind}-profile.png`),fullPage:true});
+      const downloadEvent=page.waitForEvent('download'); await page.locator('.download-button').first().click();
+      const download=await downloadEvent; await download.saveAs(path.join(out,`${kind}-fixture.svg`));
+      check(fs.readFileSync(path.join(out,`${kind}-fixture.svg`),'utf8').includes('GhostView coast abstract demo artwork'),`${kind}: actual download`);
+      await page.locator('.load-more').click(); await page.waitForFunction(()=>document.querySelectorAll('.media-card').length===8);
+      check(await page.locator('.media-card').count()===8,`${kind}: pagination`);
+      await page.getByRole('tab',{name:'Stories',exact:true}).click();
+      check(await page.locator('.media-card').count()===2,`${kind}: stories`);
+      await page.locator('.media-cover').first().click(); await page.waitForSelector('#viewer[open]');
+      await page.locator('#viewer-play').click();
+      check(await page.locator('#viewer-download').isVisible(),`${kind}: story download visible`);
+      check(await page.locator('#viewer-next').isVisible()&&await page.locator('#viewer-close').isVisible(),`${kind}: viewer controls visible`);
+      const img=page.locator('#viewer-media img'); await img.evaluate(el=>el.decode());
+      await page.screenshot({path:path.join(out,kind==='mobile'?'story-viewer.png':'desktop-story-viewer.png')});
+      await page.locator('#viewer-next').click();
+      await page.waitForFunction(()=>{const v=document.querySelector('#viewer-media video');return v&&v.readyState>=2;});
+      check(await page.locator('#viewer-media video').evaluate(v=>Math.abs(v.duration-3)<.1),`${kind}: real story video decodes`);
+      await page.locator('#viewer-mute').click(); check(await page.locator('#viewer-media video').evaluate(v=>!v.muted),`${kind}: mute control`);
+      await page.keyboard.press('Escape');check(!(await page.locator('#viewer').evaluate(el=>el.open)),`${kind}: Escape closes viewer`);
+      await page.getByRole('tab',{name:'Highlights',exact:true}).click();check(await page.locator('.highlight-title').count()===1,`${kind}: highlights`);
+      await page.locator('#search-input').fill('private.user');await page.locator('#search-button').click();await page.waitForSelector('.state-panel h2');
+      check((await page.locator('.state-panel').textContent()).includes('This profile is private.'),`${kind}: private state readable`);
+      check(await page.locator('.media-card').count()===0,`${kind}: private media protected`);
+      await page.screenshot({path:path.join(out,kind==='mobile'?'private-profile.png':'desktop-private-profile.png'),fullPage:true});
+      await page.locator('#search-input').fill('alex');await page.locator('#search-button').click();await page.waitForSelector('.candidate');
+      check(await page.locator('.candidate').count()===2,`${kind}: ambiguous search`);
+      await page.locator('.candidate').first().click();await page.waitForSelector('.profile-name h2');
+      await page.locator('#search-input').fill('missing');await page.locator('#search-button').click();await page.waitForSelector('.state-panel h2');
+      check((await page.locator('.state-panel h2').textContent()).includes('No profiles found'),`${kind}: empty state`);
+      await page.locator('#search-input').fill('https://127.0.0.1/profile');await page.locator('#search-button').click();await page.waitForFunction(()=>document.querySelector('#results[aria-busy="false"]'));
+      check((await page.locator('.state-panel h2').textContent()).includes('couldn')||(await page.locator('.state-panel h2').textContent()).includes('couldn’t'),`${kind}: validation error`);
+      await page.locator('#theme-toggle').click();check(await page.locator('html').getAttribute('data-theme')==='dark',`${kind}: theme toggle`);
+      check(faults.length===0,`${kind}: no JavaScript errors ${faults.join('; ')}`);
+      check(securityFaults.length===0,`${kind}: no CSP violations ${securityFaults.join('; ')}`);
+      await context.close();
+    }
+    const regression = await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+    const page = await regression.newPage();
+    await page.route('**/api/v1/profiles/*/*/stories', async route => {
+      const response=await route.fetch(); const json=await response.json();
+      json.data=[json.data[1],json.data[0]];
+      await route.fulfill({response,json});
+    });
+    await page.route('**/api/v1/profiles/*/alex.morgan', async route => {
+      const response=await route.fetch(); const json=await response.json();
+      json.data.displayName='<img src=x onerror="window.injected=true">';
+      json.data.bio='<script>window.injected=true</script>';
+      await route.fulfill({response,json});
+    });
+    await page.goto(origin); await page.locator('[data-query="alex.morgan"]').click(); await page.waitForSelector('.profile-name h2');
+    check((await page.locator('.profile-name h2').textContent()).startsWith('<img'), 'Provider HTML is rendered as text');
+    check(await page.evaluate(()=>!window.injected && !document.querySelector('.profile-name h2 img')), 'Provider HTML cannot execute');
+    await page.getByRole('tab',{name:'Stories',exact:true}).click(); await page.locator('.media-cover').first().click();
+    await page.waitForFunction(()=>{const v=document.querySelector('#viewer-media video');return v&&v.readyState>=2;});
+    await page.waitForFunction(()=>document.querySelector('#viewer-position').textContent==='2 of 2',{},{timeout:10000});
+    check(await page.locator('#viewer-media img').count()===1, 'Completed story video advances to following image');
+    await page.locator('#viewer-play').click();
+    check((await page.locator('#viewer-play').textContent()).includes('Play'), 'Story pause control pauses progress');
+    await page.keyboard.press('Escape');
+    check(await page.locator('.media-cover').first().evaluate(el=>el===document.activeElement), 'Viewer restores keyboard focus');
+    await regression.close();
+    console.log(`${passed} passed\n0 failed`);
+  } finally { await browser.close(); }
+})().catch(error=>{console.error(error);process.exitCode=1;});

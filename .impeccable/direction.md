@@ -1,0 +1,7 @@
+# GhostView direction contract
+
+THESIS: A quiet, legible public-content search tool whose availability is visible before discovery.
+OWN-WORLD: An all-light library index: warm green-white #f8f9f5 canvas, white working surface, dark green-gray #222a26 ink, muted #667069 body copy and restrained #315b4b controls. Actual sample artwork carries media, never a claim of live access.
+STORY: Choose a platform, search, choose a candidate if needed, view public metadata and supported content, open focused media. Private and unavailable outcomes are first-class states.
+FIRST VIEWPORT: Wordmark and theme control, centered headline and search with platform controls, explicit demo badge and working example searches.
+FORM: Impeccable seed 71d88987 assigned index5. User's explicit all-light preference and detailed centered-search neutral UI brief govern composition. The other possible directions (contact sheet, search console, compact directory, media feed, library index, transit map, personal notebook) were constrained by that brief; library index carries clear availability and structured resource tabs. Implemented directly in code from the explicit product brief; no approved image comp exists. Broad whitespace, aligned platform actions, semantic forms, modest curved surfaces, native dialog focus containment. Mobile reflows gallery to two columns and maintains 44px primary actions. Media-only motion, reduced-motion support.

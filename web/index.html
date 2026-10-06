@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A quiet place to explore publicly accessible social content. Never access private profiles or supply platform credentials.">
+  <meta name="color-scheme" content="light dark">
+  <title>GhostView — A clearer view of public content</title>
+  <link rel="icon" href="/assets/icons/ghost.svg" type="image/svg+xml">
+  <link rel="preload" href="/assets/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <script src="/assets/js/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#search-input">Skip to search</a>
+  <header class="site-header shell">
+    <a class="brand" href="/" aria-label="GhostView home"><img src="/assets/icons/ghost.svg" alt="" width="34" height="34"><span>GhostView</span></a>
+    <div class="header-actions"><span class="public-label"><span class="status-dot"></span>Public content only</span><button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to dark theme" title="Switch theme"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#sun"></use></svg></button></div>
+  </header>
+  <main class="shell">
+    <section class="search-section" aria-labelledby="hero-title">
+      <div class="hero-copy"><h1 id="hero-title">View public social<br>content <span>privately.</span></h1><p>Search public TikTok, Instagram and Facebook profiles<br class="desktop-break"> without switching apps.</p></div>
+      <div class="search-panel">
+        <div class="platforms" role="group" aria-label="Choose a platform">
+          <button class="platform-button active" type="button" data-platform="tiktok" aria-pressed="true"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#tiktok"></use></svg>TikTok</button>
+          <button class="platform-button" type="button" data-platform="instagram" aria-pressed="false"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#instagram"></use></svg>Instagram</button>
+          <button class="platform-button" type="button" data-platform="facebook" aria-pressed="false"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#facebook"></use></svg>Facebook</button>
+        </div>
+        <form id="search-form" role="search">
+          <label class="sr-only" for="search-input">Username, display name or supported profile URL</label>
+          <div class="search-field"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#search"></use></svg><input id="search-input" name="q" placeholder="@username or profile URL" autocomplete="off" spellcheck="false" maxlength="512" required><button class="primary-button" id="search-button" type="submit">Search <svg aria-hidden="true"><use href="/assets/icons/sprite.svg#arrow"></use></svg></button></div>
+        </form>
+        <p class="search-note"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#shield"></use></svg>No platform login. Public content only.</p>
+      </div>
+      <div class="demo-notice"><span class="badge" id="data-source">DATA SOURCE: UNKNOWN</span><span class="badge" id="mode-badge">Checking providers</span><p id="mode-copy">Loading provider capability information.</p></div>
+      <div class="demo-examples" id="demo-examples" hidden><span>Try a sample:</span><button type="button" data-query="alex.morgan">@alex.morgan <svg aria-hidden="true"><use href="/assets/icons/sprite.svg#arrow"></use></svg></button><button type="button" data-query="alex">Multiple matches</button><button type="button" data-query="private.user">Private profile</button></div>
+    </section>
+    <section id="results" class="results" aria-live="polite" aria-busy="false" aria-label="Search results" hidden></section>
+    <section class="intro" id="intro" aria-labelledby="intro-title">
+      <div class="intro-heading"><h2 id="intro-title">One search.<br>A clearer view.</h2><p>Your public-content window, with a little less noise.<br>Choose a platform, find a profile, explore what’s available.</p></div>
+      <div class="platform-overview">
+        <article><div class="overview-title"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#tiktok"></use></svg><h3>TikTok</h3><span class="tiny-badge" data-status="tiktok">CHECKING</span></div><p data-capability="tiktok">Checking available public data.</p></article>
+        <article><div class="overview-title"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#instagram"></use></svg><h3>Instagram</h3><span class="tiny-badge" data-status="instagram">CHECKING</span></div><p data-capability="instagram">Checking available public data.</p></article>
+        <article><div class="overview-title"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#facebook"></use></svg><h3>Facebook</h3><span class="tiny-badge" data-status="facebook">CHECKING</span></div><p data-capability="facebook">Checking available public data.</p></article>
+      </div>
+      <div class="privacy-note"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#lock"></use></svg><p>Public means public.<br><span>Private profiles, restricted content and login walls stay that way.</span></p></div>
+    </section>
+  </main>
+  <footer class="site-footer shell"><span class="footer-brand">GhostView <span>A little less noise.</span></span><div><button type="button" data-info="privacy">Privacy &amp; access</button><button type="button" data-info="about">About the demo</button></div><p id="footer-info" hidden></p></footer>
+  <dialog id="viewer" aria-label="Media viewer">
+    <div class="viewer-shell"><header class="viewer-header"><div><span class="viewer-title" id="viewer-title">Media viewer</span><span id="viewer-position"></span></div><button class="icon-button" id="viewer-close" type="button" aria-label="Close viewer"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#close"></use></svg></button></header><div id="viewer-progress" class="viewer-progress" aria-hidden="true"><span></span></div><div class="viewer-content"><button class="viewer-nav previous" id="viewer-prev" type="button" aria-label="Previous media"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#left"></use></svg></button><div id="viewer-media" class="viewer-media"></div><button class="viewer-nav next" id="viewer-next" type="button" aria-label="Next media"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#right"></use></svg></button></div><div class="viewer-caption" id="viewer-caption"></div><div class="viewer-controls"><button class="control-button" id="viewer-play" type="button"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#pause"></use></svg><span>Pause</span></button><button class="control-button" id="viewer-mute" type="button"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#mute"></use></svg><span>Unmute</span></button><a class="control-button" id="viewer-download"><svg aria-hidden="true"><use href="/assets/icons/sprite.svg#download"></use></svg><span>Download</span></a></div><p id="viewer-error" class="viewer-error" role="status" hidden></p></div>
+  </dialog>
+</body>
+</html>

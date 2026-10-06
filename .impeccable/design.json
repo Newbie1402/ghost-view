@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T15:24:30.246578+00:00",
+  "title": "Design System: GhostView",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Forest Green",
+        "tonalRamp": [
+          "oklch(15% 0.05 160)",
+          "oklch(26% 0.05 160)",
+          "oklch(38% 0.05 160)",
+          "oklch(49% 0.05 160)",
+          "oklch(61% 0.05 160)",
+          "oklch(72% 0.05 160)",
+          "oklch(84% 0.05 160)",
+          "oklch(95% 0.05 160)"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Pale Leaf",
+        "tonalRamp": [
+          "oklch(15% 0.012 145)",
+          "oklch(26% 0.012 145)",
+          "oklch(38% 0.012 145)",
+          "oklch(49% 0.012 145)",
+          "oklch(61% 0.012 145)",
+          "oklch(72% 0.012 145)",
+          "oklch(84% 0.012 145)",
+          "oklch(95% 0.012 145)"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "tonalRamp": [
+          "oklch(15% 0.006 115)",
+          "oklch(26% 0.006 115)",
+          "oklch(38% 0.006 115)",
+          "oklch(49% 0.006 115)",
+          "oklch(61% 0.006 115)",
+          "oklch(72% 0.006 115)",
+          "oklch(84% 0.006 115)",
+          "oklch(95% 0.006 115)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "White Working Surface",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(72% 0 0)",
+          "oklch(84% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Green-Gray Ink",
+        "tonalRamp": [
+          "oklch(15% 0.012 160)",
+          "oklch(26% 0.012 160)",
+          "oklch(38% 0.012 160)",
+          "oklch(49% 0.012 160)",
+          "oklch(61% 0.012 160)",
+          "oklch(72% 0.012 160)",
+          "oklch(84% 0.012 160)",
+          "oklch(95% 0.012 160)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Quiet Gray",
+        "tonalRamp": [
+          "oklch(15% 0.012 150)",
+          "oklch(26% 0.012 150)",
+          "oklch(38% 0.012 150)",
+          "oklch(49% 0.012 150)",
+          "oklch(61% 0.012 150)",
+          "oklch(72% 0.012 150)",
+          "oklch(84% 0.012 150)",
+          "oklch(95% 0.012 150)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Soft Divider",
+        "tonalRamp": [
+          "oklch(15% 0.012 120)",
+          "oklch(26% 0.012 120)",
+          "oklch(38% 0.012 120)",
+          "oklch(49% 0.012 120)",
+          "oklch(61% 0.012 120)",
+          "oklch(72% 0.012 120)",
+          "oklch(84% 0.012 120)",
+          "oklch(95% 0.012 120)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Green",
+        "tonalRamp": [
+          "oklch(15% 0.045 155)",
+          "oklch(26% 0.045 155)",
+          "oklch(38% 0.045 155)",
+          "oklch(49% 0.045 155)",
+          "oklch(61% 0.045 155)",
+          "oklch(72% 0.045 155)",
+          "oklch(84% 0.045 155)",
+          "oklch(95% 0.045 155)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Introductory section title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Result and state headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default readable interface text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges, captions and compact controls."
+      }
+    },
+    "shadows": [
+      {
+        "name": "search-ambient",
+        "value": "0 16px 48px -20px #263e2928",
+        "purpose": "Lifts the search working surface."
+      }
+    ],
+    "motion": [
+      {
+        "name": "media-ease",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Media thumbnail hover scale."
+      },
+      {
+        "name": "media-duration",
+        "value": ".35s",
+        "purpose": "Thumbnail hover transform duration."
+      },
+      {
+        "name": "field-duration",
+        "value": ".2s",
+        "purpose": "Field border transition."
+      },
+      {
+        "name": "skeleton",
+        "value": "1.2s ease-in-out infinite alternate",
+        "purpose": "Breathing loading placeholders; disabled with reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile-max",
+        "value": "600px"
+      },
+      {
+        "name": "tablet-max",
+        "value": "900px"
+      },
+      {
+        "name": "wide-min",
+        "value": "1440px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main search and retry action.",
+      "html": "<button class=\"ds-primary\" type=\"button\">Search <svg aria-hidden=\"true\" viewBox=\"0 0 24 24\"><path d=\"M5 12h14m-5-5 5 5-5 5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button>",
+      "css": ".ds-primary{background:var(--accent,#315b4b);color:var(--surface,#fff);display:flex;gap:16px;align-items:center;justify-content:center;border:0;border-radius:8px;font:600 14px \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif;min-height:46px;padding:0 22px;cursor:pointer}.ds-primary svg{width:20px;height:20px}.ds-primary:hover{filter:brightness(1.12)}.ds-primary:disabled{opacity:.5;cursor:default}.ds-primary:focus-visible{outline:3px solid var(--focus,#6c957d);outline-offset:4px}"
+    },
+    {
+      "name": "Circular icon button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "A compact secondary interface action.",
+      "html": "<button class=\"ds-icon\" aria-label=\"Close viewer\" type=\"button\"><svg aria-hidden=\"true\" viewBox=\"0 0 24 24\"><path d=\"m6 6 12 12M6 18 18 6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\"/></svg></button>",
+      "css": ".ds-icon{width:40px;height:40px;display:grid;place-items:center;color:var(--text,#222a26);background:var(--surface,#fff);border:1px solid var(--line,#e0e5dc);border-radius:50%;cursor:pointer}.ds-icon svg{width:20px;height:20px}.ds-icon:hover{background:var(--accent-soft,#eaf0e9)}.ds-icon:focus-visible{outline:3px solid var(--focus,#6c957d);outline-offset:4px}"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "A flexible field inside the search working surface.",
+      "html": "<label class=\"ds-field\"><svg aria-hidden=\"true\" viewBox=\"0 0 24 24\"><g fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m16 16 4.5 4.5\"/></g></svg><input aria-label=\"Username or profile URL\" placeholder=\"@username or profile URL\"></label>",
+      "css": ".ds-field{display:flex;gap:12px;align-items:center;border:1px solid var(--line,#e0e5dc);border-radius:12px;padding:7px 7px 7px 17px;background:var(--surface,#fff);transition:border-color .2s}.ds-field svg{width:20px;height:20px;color:var(--muted,#667069)}.ds-field input{width:100%;min-width:0;background:transparent;color:var(--text,#222a26);border:0;height:46px;outline:none;font:15px \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif}.ds-field input::placeholder{color:var(--muted,#667069)}.ds-field:focus-within{border-color:var(--accent,#315b4b)}@media(max-width:600px){.ds-field input{font-size:16px;height:42px}}@media(prefers-reduced-motion:reduce){.ds-field{transition:none}}"
+    },
+    {
+      "name": "Platform navigation",
+      "kind": "nav",
+      "refersTo": "platform-selected",
+      "description": "A quiet segmented platform choice.",
+      "html": "<div class=\"ds-platforms\" role=\"group\" aria-label=\"Choose a platform\"><button type=\"button\" aria-pressed=\"true\">TikTok</button><button type=\"button\" aria-pressed=\"false\">Instagram</button><button type=\"button\" aria-pressed=\"false\">Facebook</button></div>",
+      "css": ".ds-platforms{display:flex;gap:6px;justify-content:center}.ds-platforms button{color:var(--muted,#667069);background:none;border:0;border-radius:9px;min-height:42px;padding:10px 20px;font:600 13px \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif;cursor:pointer}.ds-platforms button:hover{background:var(--bg,#f8f9f5)}.ds-platforms button[aria-pressed=true]{color:var(--accent,#315b4b);background:var(--accent-soft,#eaf0e9)}.ds-platforms button:focus-visible{outline:3px solid var(--focus,#6c957d);outline-offset:4px}"
+    },
+    {
+      "name": "Availability badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Readable provider and demo status.",
+      "html": "<span class=\"ds-badge\">Demo mode</span>",
+      "css": ".ds-badge{display:inline-block;border:1px solid var(--line,#e0e5dc);border-radius:5px;font:600 12px \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif;padding:3px 7px;color:var(--accent,#315b4b);white-space:nowrap;background:var(--accent-soft,#eaf0e9)}"
+    },
+    {
+      "name": "Candidate card",
+      "kind": "card",
+      "refersTo": "candidate-card",
+      "description": "A selectable identity row with secondary username text.",
+      "html": "<button class=\"ds-candidate\" type=\"button\"><span class=\"ds-candidate-copy\"><strong>Alex Morgan</strong><small>@alex.morgan</small></span><span class=\"ds-candidate-platform\">Instagram</span></button>",
+      "css": ".ds-candidate{display:flex;align-items:center;gap:16px;padding:20px;text-align:left;background:var(--surface,#fff);color:var(--text,#222a26);border:1px solid var(--line,#e0e5dc);border-radius:12px;width:100%;font:15px \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif;cursor:pointer}.ds-candidate:hover{border-color:var(--accent,#315b4b);background:var(--accent-soft,#eaf0e9)}.ds-candidate-copy{flex:1;min-width:0}.ds-candidate strong{display:block;font-weight:650;overflow-wrap:anywhere}.ds-candidate small{display:block;color:var(--muted,#667069);margin-top:3px;overflow-wrap:anywhere}.ds-candidate-platform{border:1px solid var(--line,#e0e5dc);border-radius:5px;font-size:12px;font-weight:600;padding:3px 7px;color:var(--accent,#315b4b);background:var(--accent-soft,#eaf0e9)}.ds-candidate:focus-visible{outline:3px solid var(--focus,#6c957d);outline-offset:4px}"
+    },
+    {
+      "name": "Resource tabs",
+      "kind": "nav",
+      "description": "Supported content resources share an understated underline treatment.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\" aria-label=\"Media resources\"><button type=\"button\" role=\"tab\" aria-selected=\"true\">Posts</button><button type=\"button\" role=\"tab\" aria-selected=\"false\">Stories</button></div>",
+      "css": ".ds-tabs{display:flex;gap:24px;border-bottom:1px solid var(--line,#e0e5dc)}.ds-tabs button{color:var(--text,#222a26);background:none;border:0;border-bottom:2px solid transparent;font:600 13px \"Avenir Next\", Avenir, \"Segoe UI\", sans-serif;padding:13px 3px;min-height:44px;cursor:pointer}.ds-tabs button[aria-selected=true]{color:var(--accent,#315b4b);border-bottom-color:var(--accent,#315b4b)}.ds-tabs button:hover{color:var(--accent,#315b4b)}.ds-tabs button:focus-visible{outline:3px solid var(--focus,#6c957d);outline-offset:4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Light Library Index",
+    "overview": "GhostView uses an all-light default interface: warm paper, white working surfaces, green-gray ink and restrained forest-green actions. Spacious composition and short, readable labels make discovery feel quiet and deliberate.\n\nAvailability is part of the visual hierarchy. Demo badges, access states and supported resource tabs stay readable beside the content they describe. Media artwork supplies visual variety; interface decoration stays modest. An explicit theme toggle also provides a secondary dark theme through the existing CSS variable overrides.",
+    "keyCharacteristics": [
+      "Light neutral surfaces with restrained green controls.",
+      "Manrope headings and a familiar humanist body stack.",
+      "Rounded working surfaces, fine dividers and open whitespace.",
+      "Visible availability labels and focused media viewing."
+    ],
+    "rules": [
+      {
+        "name": "The Availability Rule",
+        "body": "Status labels use text as well as color; a private or unavailable state must remain understandable without recognizing the palette.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reading Rule",
+        "body": "Keep provider descriptions and biographies as plain text with natural wrapping. Numeric statistics use tabular figures; unavailable counts receive no invented numeric value.",
+        "section": "typography"
+      },
+      {
+        "name": "The Quiet Depth Rule",
+        "body": "Reserve ambient elevation for the search surface; use existing dividers and tonal changes for other interface grouping.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the light palette as the default and existing theme variables for alternate surfaces.",
+      "**Do** keep availability labels adjacent to the resource they explain.",
+      "**Do** preserve visible keyboard focus, wrapping identity text and reduced-motion support.",
+      "**Do** use the shared radii and spacing before introducing a new step."
+    ],
+    "donts": [
+      "**Don't** introduce a dark header into the all-light default interface.",
+      "**Don't** replace status wording with color alone or fabricated counts.",
+      "**Don't** add heavy shadows to every content card.",
+      "**Don't** render provider HTML or turn media artwork into decorative interface chrome."
+    ]
+  }
+}

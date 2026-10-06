@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+!.env.example
+bin
+server
+artifacts
+.impeccable
+.DS_Store
