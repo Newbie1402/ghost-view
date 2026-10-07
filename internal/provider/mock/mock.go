@@ -124,6 +124,9 @@ func (p *Provider) GetPosts(ctx context.Context, u, cursor string) (*model.Media
 	}
 	return page, nil
 }
+func (p *Provider) GetReposts(ctx context.Context, u, cursor string) (*model.MediaPage, error) {
+	return nil, httputil.Unsupported
+}
 func (p *Provider) GetStories(ctx context.Context, u string) ([]model.MediaItem, error) {
 	if e := p.public(ctx, u); e != nil {
 		return nil, e

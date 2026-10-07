@@ -20,9 +20,9 @@ func TestRealProviderContracts(t *testing.T) {
 		status   string
 		caps     model.ProviderCapabilities
 	}{
-		{tiktok.New(), "EXPERIMENTAL", model.ProviderCapabilities{Search: true, Profile: true}},
-		{instagram.New(), "EXPERIMENTAL", model.ProviderCapabilities{Search: true, Profile: true, Posts: true}},
-		{facebook.New(), "UNAVAILABLE", model.ProviderCapabilities{}},
+		{tiktok.New(), "EXPERIMENTAL", model.ProviderCapabilities{Search: true, Profile: true, Stories: true, Downloads: true}},
+		{instagram.New(), "EXPERIMENTAL", model.ProviderCapabilities{Search: true, Profile: true, Posts: true, Highlights: true, Downloads: true}},
+		{facebook.New(), "EXPERIMENTAL", model.ProviderCapabilities{Search: true, Profile: true}},
 	} {
 		p := tc.provider
 		t.Run(string(p.Platform()), func(t *testing.T) {

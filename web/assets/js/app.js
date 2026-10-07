@@ -8,8 +8,8 @@
   const submit = $('#search-button');
   const dialog = $('#viewer');
   const platformNames = { tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
-  const mediaHosts = ['tiktok.com', 'tiktokcdn.com', 'tiktokcdn-us.com', 'instagram.com', 'cdninstagram.com', 'facebook.com', 'fbcdn.net'];
-  const state = { platform: 'tiktok', providers: new Map(), controller: null, profile: null, posts: [], stories: [], highlights: [], resourceErrors: {}, cursor: '', tab: 'posts', viewItems: [], viewIndex: 0, paused: false, muted: true, story: false, elapsed: 0, lastFrame: 0, frame: 0, opener: null };
+  const mediaHosts = ['tiktok.com', 'tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokcdn-eu.com', 'instagram.com', 'cdninstagram.com', 'facebook.com', 'fbcdn.net'];
+  const state = { platform: 'tiktok', providers: new Map(), controller: null, profile: null, posts: [], reposts: [], stories: [], highlights: [], resourceErrors: {}, cursor: '', tab: 'posts', viewItems: [], viewIndex: 0, paused: false, muted: true, story: false, elapsed: 0, lastFrame: 0, frame: 0, opener: null };
 
   function node(tag, className, text) {
     const item = document.createElement(tag);
@@ -30,7 +30,7 @@
     try {
       const url = new URL(value, location.origin);
       if (url.username || url.password) return '';
-      if (url.origin === location.origin && url.pathname.startsWith('/assets/fixtures/')) return url.href;
+      if (url.origin === location.origin && (url.pathname.startsWith('/assets/fixtures/') || url.pathname.startsWith('/api/v1/media/'))) return url.href;
       if (url.protocol !== 'https:' || (url.port && url.port !== '443')) return '';
       if (mediaHosts.some(host => url.hostname === host || url.hostname.endsWith(`.${host}`))) return url.href;
     } catch (_) { /* Invalid provider URL remains unavailable. */ }
@@ -201,17 +201,17 @@
     await providerReady;
     if (signal.aborted) return;
     const caps = state.providers.get(state.platform)?.capabilities || profile.capabilities || {};
-    const requests = ['posts', 'stories', 'highlights'].map(resource => caps[resource] ? api(`${path}/${resource}`, signal) : Promise.resolve(null));
+    const requests = ['posts', 'reposts', 'stories', 'highlights'].map(resource => caps[resource] ? api(`${path}/${resource}`, signal) : Promise.resolve(null));
     const media = await Promise.allSettled(requests);
     if (signal.aborted) return;
     state.resourceErrors = {};
-    ['posts', 'stories', 'highlights'].forEach((resource, index) => {
+    ['posts', 'reposts', 'stories', 'highlights'].forEach((resource, index) => {
       if (media[index].status === 'rejected') state.resourceErrors[resource] = media[index].reason;
     });
     state.posts = media[0].status === 'fulfilled' ? media[0].value?.items || [] : [];
-    state.cursor = media[0].status === 'fulfilled' ? media[0].value?.nextCursor || '' : '';
-    state.stories = media[1].status === 'fulfilled' ? media[1].value || [] : [];
-    state.highlights = media[2].status === 'fulfilled' ? media[2].value || [] : [];
+    state.reposts = media[1].status === 'fulfilled' ? media[1].value?.items || [] : [];
+    state.stories = media[2].status === 'fulfilled' ? media[2].value || [] : [];
+    state.highlights = media[3].status === 'fulfilled' ? media[3].value || [] : [];
     state.tab = caps.posts ? 'posts' : caps.stories ? 'stories' : caps.highlights ? 'highlights' : '';
     renderProfile(caps);
   }
@@ -226,6 +226,7 @@
     if (profile.verified) { const verified = icon('verified'); verified.setAttribute('aria-label', 'Verified profile'); verified.removeAttribute('aria-hidden'); name.append(verified); }
     copy.append(name, node('p', 'profile-username', `@${profile.username} · ${platformNames[state.platform]}`));
     if (profile.bio) copy.append(node('p', 'profile-bio', profile.bio));
+    if (profile.message) copy.append(node('p', 'profile-note', profile.message));
     const stats = node('div', 'profile-stats');
     [['followerCount', 'Followers'], ['followingCount', 'Following'], ['postCount', 'Posts']].forEach(([key, label]) => {
       if (profile[key] !== null && profile[key] !== undefined) {
@@ -244,6 +245,7 @@
     const options = [];
     if (caps.stories) options.push(['stories', 'Stories']);
     if (caps.posts) options.push(['posts', 'Posts']);
+    if (caps.reposts) options.push(['reposts', 'Reposts']);
     if (caps.posts && state.posts.some(media => media.type === 'REEL')) options.push(['reels', 'Reels']);
     if (caps.highlights) options.push(['highlights', 'Highlights']);
     options.forEach(([key, label]) => {
@@ -293,16 +295,26 @@
       const grid = node('div', 'media-grid stories-grid');
       state.highlights.forEach(highlight => {
         const card = node('article', 'media-card');
-        const view = button('', 'media-cover', () => openViewer(highlight.items || [], 0, true, highlight.title));
-        view.setAttribute('aria-label', `View highlight: ${highlight.title}`);
+        const items = highlight.items || [];
+        let view;
+        if (items.length) {
+          view = button('', 'media-cover', () => openViewer(items, 0, true, highlight.title));
+          view.setAttribute('aria-label', `View highlight: ${highlight.title}`);
+        } else {
+          // Real providers cannot open highlight contents without a platform login.
+          view = node('div', 'media-cover');
+          view.setAttribute('aria-label', `Highlight ${highlight.title}: contents are not publicly accessible`);
+          view.setAttribute('role', 'img');
+        }
         view.append(image(highlight.thumbnailURL, highlight.title));
+        if (!items.length) view.append(node('span', 'media-type', 'Login required'));
         card.append(view, node('span', 'highlight-title', highlight.title));
         grid.append(card);
       });
       panel.append(grid);
       return;
     }
-    const items = key === 'stories' ? state.stories : key === 'reels' ? state.posts.filter(item => item.type === 'REEL') : state.posts;
+    const items = key === 'stories' ? state.stories : key === 'reposts' ? state.reposts : key === 'reels' ? state.posts.filter(item => item.type === 'REEL') : state.posts;
     if (!items.length) panel.append(node('p', 'empty-media', `No publicly available ${key} were supplied by this provider.`));
     else {
       const grid = node('div', `media-grid${key === 'stories' ? ' stories-grid' : ''}`);
@@ -311,7 +323,7 @@
         const cover = button('', 'media-cover', () => openViewer(items, index, key === 'stories'));
         cover.setAttribute('aria-label', `View ${media.type.toLowerCase()}: ${media.caption || `media ${index + 1}`}`);
         cover.append(image(media.thumbnailURL || media.mediaURL, media.caption || `${media.type.toLowerCase()} thumbnail`));
-        const type = node('span', 'media-type', media.previewOnly ? 'Image preview' : media.type.charAt(0) + media.type.slice(1).toLowerCase());
+        const type = node('span', 'media-type', media.previewOnly ? (isVideo(media) ? 'Video preview' : 'Image preview') : media.type.charAt(0) + media.type.slice(1).toLowerCase());
         type.prepend(icon(isVideo(media) ? 'play' : 'image'));
         cover.append(type);
         if (media.duration) cover.append(node('span', 'media-duration', duration(media.duration)));
@@ -344,7 +356,7 @@
     return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
   }
   function isVideo(media) {
-    return media.type === 'VIDEO' || media.type === 'REEL' || /\.(mp4|webm|mov)(?:\?|$)/i.test(media.mediaURL || '');
+    return media.type === 'VIDEO' || media.type === 'REEL' || /\.(mp4|webm|mov)(?:\?|$)/i.test(media.mediaURL || '') || /[?&]mime_type=video/.test(media.mediaURL || '');
   }
   function openViewer(items, index, story = false, title = 'Public media') {
     if (!items.length) return;
@@ -372,7 +384,13 @@
     const media = state.viewItems[state.viewIndex];
     const area = $('#viewer-media');
     area.replaceChildren();
-    const url = safeURL(media.mediaURL);
+    // Referer-bound or CORS-sensitive CDNs are served through the backend
+    // whenever the media resolves to a download resource; same-origin playback
+    // is preferred over the raw upstream URL.
+    const backend = media.downloadable && state.providers.get(state.platform)?.capabilities.downloads
+      ? `/api/v1/media/${encodeURIComponent(state.platform)}/${encodeURIComponent(media.id)}/download`
+      : '';
+    const url = backend || safeURL(media.mediaURL);
     $('#viewer-position').textContent = `${state.viewIndex + 1} of ${state.viewItems.length}`;
     $('#viewer-caption').textContent = media.caption || '';
     $('#viewer-prev').disabled = state.viewIndex === 0;
@@ -397,7 +415,10 @@
       video.setAttribute('aria-label', media.caption || 'Public video');
       const poster = safeURL(media.thumbnailURL);
       if (poster) video.poster = poster;
-      video.addEventListener('error', () => { viewerError('This video is unavailable. You can move to the next item.'); state.paused = true; updateControls(); });
+      video.addEventListener('error', () => {
+        if (backend && safeURL(media.mediaURL) && video.getAttribute('src') !== safeURL(media.mediaURL)) { video.src = safeURL(media.mediaURL); video.load(); video.play().catch(() => {}); return; }
+        viewerError('This video is unavailable. You can move to the next item.'); state.paused = true; updateControls();
+      });
       video.addEventListener('ended', () => { if (state.story && !state.paused) advanceViewer(1); else { state.paused = true; updateControls(); } });
       video.addEventListener('play', () => { state.paused = false; updateControls(); });
       video.addEventListener('pause', () => { if (video === $('#viewer-media video') && !video.ended) { state.paused = true; updateControls(); } });
@@ -408,7 +429,11 @@
     } else {
       const img = image(url, media.caption || 'Public image');
       img.loading = 'eager';
-      img.addEventListener('error', () => { state.paused = true; updateControls(); });
+      const direct = safeURL(media.mediaURL);
+      img.addEventListener('error', () => {
+        if (backend && direct && img.getAttribute('src') !== direct) { img.src = direct; return; }
+        state.paused = true; updateControls();
+      });
       area.append(img);
       if (state.story) {
         const start = () => { if (dialog.open && img === $('#viewer-media img')) state.frame = requestAnimationFrame(storyFrame); };

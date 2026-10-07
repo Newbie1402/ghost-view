@@ -183,6 +183,11 @@ func (d *Downloader) Fetch(ctx context.Context, r *model.DownloadResource) (*Res
 		return nil, httputil.DownloadUnavailable
 	}
 	req.Header.Set("Accept", "image/jpeg, image/png, image/webp, video/mp4")
+	if r.Referer != "" {
+		// Some CDNs bind signed media URLs to their own origin; the referer is
+		// part of the resource contract, not a session credential.
+		req.Header.Set("Referer", r.Referer)
+	}
 	response, e := client.Do(req)
 	if e != nil {
 		return nil, httputil.DownloadUnavailable

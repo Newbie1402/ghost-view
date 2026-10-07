@@ -5,3 +5,5 @@
 /artifacts/*.out
 /artifacts/screenshots/
 /.DS_Store
+.idea
+.codegraph

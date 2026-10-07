@@ -1,14 +1,14 @@
 # GhostView
 
-A responsive, all-light interface for exploring public social content through independently replaceable providers. Go 1.27.1, `net/http`, HTML, CSS, and vanilla JavaScript; no third-party Go dependencies.
+A responsive public social-content viewer using Go 1.27.1, `net/http`, semantic HTML, CSS and vanilla JavaScript. No third-party Go dependencies.
 
-**The default application is a working, explicitly labeled demo. TikTok, Instagram, and Facebook live retrieval is UNAVAILABLE.** Deterministic fixtures validate search, profile selection, private states, pagination, image/video stories, highlights, and fixture downloads. They are not actual social accounts or live platform data.
+**The application defaults to REAL providers. It never silently falls back to fixtures.** TikTok public profiles, Instagram public profiles/post previews/highlight trays/per-post media downloads and Facebook public identities were retrieved through anonymous Go requests and exercised through the frontend. Every screen identifies `DATA SOURCE: REAL` or `MOCK`.
 
-Executed verification and limitations: [Implementation report](docs/IMPLEMENTATION_REPORT.md).
+Executed results, exact capability scope and blockers: [Real provider report](docs/REAL_PROVIDER_REPORT.md). The [initial implementation report](docs/IMPLEMENTATION_REPORT.md) records the earlier mock-only milestone and is superseded for live capabilities.
 
 ## Setup
 
-Install Go 1.27.1 or newer, then from the repository root:
+Install Go 1.27.1 or newer:
 
 ```sh
 cp .env.example .env
@@ -18,77 +18,154 @@ set +a
 make run
 ```
 
-Open [GhostView](http://localhost:8080). Go reads process environment variables; it does not automatically load `.env`. Alternatively, run `make run` directly with the documented defaults.
+Open [GhostView](http://localhost:8080). Environment files are not loaded automatically by Go. To avoid an occupied port:
 
-Try `@alex.morgan` for a public demo, `alex` or `Alex Morgan` for two candidates, `private.user` for a private account, and `nobody` for no results. All three platform selectors use the same local fixtures. `unavailable`, `rate.limited`, and `timeout` exercise error states. Mock image downloads are generated SVG fixtures; mock video downloads are unavailable.
+```sh
+ADDR=127.0.0.1:18080 make run
+```
+
+Real inputs exercised:
+
+- `https://www.tiktok.com/@marcmarquez93?_r=1&_t=ZS-9AKf9BKqZhS`
+- `https://www.instagram.com/marcmarquez93/`
+- `https://www.facebook.com/bacbeodangiuu` — returns UNAVAILABLE, not mock data.
+
+Live search resolves exact usernames/profile URLs. Display-name discovery is unsupported. A recognized URL determines the platform regardless of the selected browser control. TikTok `_r` and `_t` share-tracking parameters are discarded and never forwarded upstream; arbitrary query parameters remain rejected.
+
+Explicit fixture mode:
+
+```sh
+PROVIDER_MODE=mock make run
+```
+
+Only fixture mode supplies `alex.morgan`, ambiguous `alex`, `private.user`, mock stories/highlights and mock image downloads. It displays `DATA SOURCE: MOCK`.
 
 ## Architecture
 
 ```text
-cmd/server/main.go       configuration, dependency wiring, graceful shutdown
-internal/model          unified profiles, media, capabilities, access statuses
-internal/handler        HTTP routing, envelopes, static files, attachments
-internal/service        normalization, access checks, capability checks, caching
-internal/provider       SocialProvider contract and unavailable adapters
-  mock                  deterministic fixture provider
-  tiktok/instagram/facebook   replaceable live adapter entry points
-internal/downloader     allowlisted HTTPS retrieval, DNS/redirect validation
-internal/cache          bounded, replaceable in-memory TTL cache
-internal/middleware     headers, CORS, limits, rate limits, structured logs
-internal/config         validated environment configuration
-internal/httputil       safe JSON responses and typed public errors
-web                     semantic HTML, CSS, JavaScript, local media
-scripts                 curl acceptance and integration checks
-tests                   frontend smoke checks
+cmd/server/main.go                 configuration, wiring, graceful shutdown
+internal/handler                   thin HTTP routes, envelopes, static assets
+internal/service                   normalization, access/capability checks, provenance
+internal/provider                  replaceable SocialProvider contract
+  tiktok                           public profile HTML/bootstrap JSON
+  instagram                        public profile JSON and image-preview timeline
+  facebook                         explicit unavailable adapter
+  mock                             deterministic development fixtures
+internal/model                     unified profile/media/capability models
+internal/downloader                validated, bounded attachment retrieval
+internal/cache                     replaceable bounded in-memory TTL cache
+internal/middleware                headers, CORS, body/method/rate limits, safe logs
+internal/config                    validated environment configuration
+internal/httputil                  safe errors, JSON envelopes, Retry-After handling
+web                                framework-free responsive frontend
+scripts                            mock and real curl acceptance checks
+tests                              source and browser smoke checks
 ```
 
-Handlers call the service; the service calls providers through `SocialProvider`. HTTP responses use domain models, not platform API models. Request contexts reach providers and downloads. Provider calls have deadlines; the HTTP server has header/read/write/idle timeouts and handles SIGINT/SIGTERM with bounded graceful shutdown.
+Handlers → service → providers. Request contexts and deadlines propagate; provider response bodies are bounded; server timeouts and bounded graceful shutdown protect resources. Provider models never leak into responses.
 
-The cache stores serialized copies under platform/resource/username/cursor keys: profiles 5 minutes, posts 2 minutes, stories 45 seconds, highlights/search 2 minutes. Entries are bounded and expire. Replace the `cache.Cache` implementation for shared storage; restart clears the current process cache.
+The service stamps `dataSource` from the provider status, overriding provider-supplied claims. Cache values are serialized copies. Service TTLs: profiles5minutes, posts2minutes, stories45seconds, search/highlights2minutes. TikTok additionally reuses normalized public profiles for30seconds; Instagram reuses normalized profile/preview bundles for60seconds to avoid repeated HTML requests. Raw HTML/cookies are not stored. Replace `cache.Cache` for Redis/shared storage.
+
+## Actual capabilities
+
+`PROVIDER_MODE=live`:
+
+| Platform | Profile | Posts | Stories | Highlights | Download | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| TikTok | Real | EXPERIMENTAL opt-in headless-browser mode (`GHOSTVIEW_TT_BROWSER=1`); unreliable — TikTok challenges it with a captcha | **Real** (active public stories; playback streams through the backend) | Unavailable | Real story media | See current verification report/API |
+| Instagram | Real | First-page previews incl. reel covers | Real when the operator sets `GHOSTVIEW_IG_SESSIONID`; otherwise blocked, login-only | Real tray (titles + covers; items via session only) | Real per-post media (image and MP4) | See current verification report/API |
+| Facebook | Real identity (name + avatar) | Unavailable | Unavailable | Unavailable | Unavailable | See current verification report/API |
+
+The provider report and `/api/v1/providers` give the exact current verification designation. Instagram feed items are author-verified (the anonymous timeline can inject other accounts' media) and labeled `Image preview`/`Video preview` with `previewOnly: true`; per-post download resolves the media manifest from the public post page. Instagram story items and highlight items require a platform session and are never fetched. Facebook identity comes from the public document's Open Graph metadata; counts and media stay nil instead of being invented. Unknown timestamps/counts/dimensions are omitted; login walls fail closed instead of being called PRIVATE. No fabricated cursors are returned.
+
+`PROVIDER_MODE=mock`:
+
+| Platform | Profile | Posts | Stories | Highlights | Download | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| TikTok | Fixture | Fixture images/reels | Fixture image/video | Fixture | Fixture images | MOCK |
+| Instagram | Fixture | Fixture images/reels | Fixture image/video | Fixture | Fixture images | MOCK |
+| Facebook | Fixture | Fixture images/reels | Fixture image/video | Fixture | Fixture images | MOCK |
+
+The UI consumes declared capabilities and does not display unsupported tabs or downloads. A provider is VERIFIED only for its executed capabilities; that status is not a promise that every platform feature or every username is retrievable. Platform restrictions/schema changes produce PRIVATE or UNAVAILABLE, never fallback data.
+
+## Provider mechanism and limitations
+
+TikTok exposes profile data in `__UNIVERSAL_DATA_FOR_REHYDRATION__` on the ordinary public profile page. Instagram exposes explicit `is_private` profile data, post previews, the highlight tray and per-post media manifests in `application/json` bootstrap scripts and public post pages. Facebook exposes public identity through its anonymous profile document's Open Graph metadata. All integrations use an identified `GhostView/1.0` client without cookies, authorization, login, signature generation or browser emulation. Missing privacy flags, wrong identity, malformed data, private/unpublished content, gated media and access walls fail closed.
+
+Official integrations were investigated first. TikTok's [Display API](https://developers.tiktok.com/docs/en/display-api-overview) is owner-authorized, while its documented [creator oEmbed](https://developers.tiktok.com/docs/en/embed-creator-profiles) probe returned 429. [Meta's official oEmbed plugin](https://github.com/facebook/meta-embeds-for-wordpress) documents tokenless endpoints; the supplied Instagram profile returned 400 InvalidParameter. The working integrations read the public documents rather than emulate restricted internal APIs. Precise patterns, headers, response shapes, rate behavior, actual outputs and dates are in [provider verification documents](docs/providers/).
+
+[Mollygram](https://mollygram.com/vi) and [TTViewer](https://ttviewer.net/vi) are behavioral references only. Their service endpoints are not used as data sources. Referenced product claims are distinguished from verified GhostView behavior in the real provider report.
+
+To extend a provider, implement `SocialProvider`, declare only delivered capabilities, enforce access/identity validation, honor context and rate restrictions, and return unified models and safe typed errors. Add unit/contract tests plus opt-in genuine network assertions. Never mark synthetic/parser tests as real retrieval success.
 
 ## Environment
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `ADDR` | `:8080` | Listening host and port; use `127.0.0.1:8080` for local-only access |
-| `PROVIDER_MODE` | `mock` | `mock` fixtures or `live` unavailable adapters |
+| `ADDR` | `:8080` | Listener; use `127.0.0.1:18080` for local-only access |
+| `PROVIDER_MODE` | `live` | REAL integrations or explicit `mock` fixtures |
 | `WEB_DIR` | `web` | Static frontend directory |
-| `PROVIDER_TIMEOUT` | `8s` | Deadline for each provider operation |
-| `DOWNLOAD_TIMEOUT` | `20s` | Download deadline; example/Compose uses `15s` |
-| `DOWNLOAD_MAX_BYTES` | `26214400` | Maximum attachment size; configured limit cannot exceed 100 MiB |
-| `RATE_LIMIT_PER_MINUTE` | `120` | Per-client-IP API requests in a fixed window |
-| `CACHE_MAX_ENTRIES` | `1000` | Maximum process-local cache entries |
-| `SHUTDOWN_TIMEOUT` | `10s` | Graceful shutdown deadline |
-| `CORS_ALLOWED_ORIGINS` | empty | Comma-separated exact browser origins; no wildcard or credentials |
+| `PROVIDER_TIMEOUT` | `8s` | Deadline per provider operation |
+| `DOWNLOAD_TIMEOUT` | `20s` | Attachment deadline; example/Compose uses15s |
+| `DOWNLOAD_MAX_BYTES` | `26214400` | Attachment cap; configuration maximum100MiB |
+| `RATE_LIMIT_PER_MINUTE` | `120` | API requests/client IP/fixed minute window |
+| `CACHE_MAX_ENTRIES` | `1000` | Process-local service cache entries |
+| `SHUTDOWN_TIMEOUT` | `10s` | Shutdown deadline |
+| `CORS_ALLOWED_ORIGINS` | empty | Exact comma-separated allowed browser origins |
 
-Durations must be between 1 ms and 5 minutes; invalid configuration stops startup. Empty CORS configuration exposes no cross-origin permission. Deployment behind TLS termination is recommended; the app serves plain HTTP and does not manage certificates.
+Invalid configuration stops startup. Durations are constrained to1ms–5minutes. The app serves HTTP; production hosting must supply TLS termination. Upstream429 responses cause bounded provider cooldown honoring `Retry-After`; there is no automatic upstream retry.
 
-## Development and testing
+## API
+
+| Method/path | Result |
+| --- | --- |
+| `GET /api/v1/health` | Status/configured mode |
+| `GET /api/v1/providers` | Platform status, data source and capabilities |
+| `GET /api/v1/search?platform=tiktok&q=...` | Normalized platform/provenance/candidates |
+| `GET /api/v1/profiles/{platform}/{username}` | Profile, provenance and access status |
+| `GET /api/v1/profiles/{platform}/{username}/posts?cursor=...` | Supported media page |
+| `GET /api/v1/profiles/{platform}/{username}/stories` | Supported stories only |
+| `GET /api/v1/profiles/{platform}/{username}/highlights` | Supported highlights only |
+| `GET /api/v1/media/{platform}/{mediaId}/download` | Supported validated attachment only |
+
+JSON success: `{"data":{},"error":null}`. Failure: `{"data":null,"error":{"code":"PROFILE_NOT_FOUND","message":"Profile was not found."}}`.
+
+Invalid input400; missing profile404; protected media403; unsupported capability422; unavailable503; rate limit429; provider timeout504. Private profile metadata is HTTP200 with `accessStatus:"PRIVATE"`, stripped protected fields and explicit explanation. No internal provider messages/credentials are exposed. Unknown information is omitted, not shown as zero.
+
+```sh
+curl -sG 'http://localhost:8080/api/v1/search' --data-urlencode platform=instagram --data-urlencode q=https://www.instagram.com/marcmarquez93/
+curl -s 'http://localhost:8080/api/v1/profiles/instagram/marcmarquez93/posts'
+```
+
+## Testing
 
 ```sh
 make fmt
 make vet
-make test             # Go tests, race detector, coverage
-make build            # bin/ghostview
-make acceptance       # builds, starts isolated server, curl assertions, cleanup
-make integration      # provider/HTTP/download tests and acceptance script
-make smoke            # Python 3 frontend smoke checks
-make check            # vet, tests, build, acceptance, smoke
+make test                  # race checks; network tests skip unless opted in
+make build
+make acceptance            # isolated explicit MOCK server, actual curl assertions
+make integration
+make smoke                 # source/assets/syntax/payload checks
+make live-acceptance       # isolated REAL server; Instagram profile + actual CDN JPEG
+LIVE_PLATFORM=tiktok make live-acceptance
+GHOSTVIEW_LIVE_TEST=1 go test -v ./internal/provider/tiktok ./internal/provider/instagram -run TestLive -count=1
 ```
 
-Acceptance requires `curl`, Python 3, Go, and an available port (automatically selected unused local port; override with `ACCEPTANCE_PORT`). It executes assertions for health, exact/ambiguous search, public/private handling, posts, stories/highlights, fixture download, SSRF rejection, and headers; failures exit nonzero. Mock provider contracts test all three platform adapters. Live adapter contract tests verify **UNAVAILABLE**, not successful real retrieval. Provider-specific evidence is in [docs/providers](docs/providers).
+Acceptance requires Go, curl, Python3 and a free local port; scripts select one and clean up only their own process. Real acceptance never converts upstream failure into mock success. Its media test validates HTTPS/domain/publicDNS, pins the validated address, asserts HTTP200, MIME, JPEG magic and actual byte length, and prints a hash instead of a signed URL.
 
-The optional browser suite requires Playwright and Chromium/Chrome already available in your development environment:
+Optional browser checks require Playwright and Chrome/Chromium installed separately in development:
 
 ```sh
+# Start REAL application first:
+BASE_URL=http://127.0.0.1:8080 make browser-real
+# Start an explicitly MOCK application for the fixture browser suite:
 BASE_URL=http://127.0.0.1:8080 make browser
-# Optional: PLAYWRIGHT_MODULE=/absolute/path/to/playwright
-# Optional: CHROME_PATH=/absolute/path/to/chrome
+# Optional environment: PLAYWRIGHT_MODULE=/absolute/path/to/playwright
+# Optional environment: CHROME_PATH=/absolute/path/to/chrome
 ```
 
-Run the application first. The browser suite checks real demo APIs, downloads and playback at both sizes; dedicated altered-response regressions exercise safe text rendering and video-before-image progression. It writes screenshots to `artifacts/screenshots/`. The self-hosted Manrope heading font is licensed under [SIL OFL](web/assets/fonts/OFL.txt); no remote font requests occur.
-
-Browser validation covers 1440×900 and 390×844, search, candidates, galleries, story controls, downloads, private/error/loading states, keyboard behavior, and horizontal overflow. Screenshot artifacts belong in `artifacts/screenshots/`. Build success alone does not establish browser or Docker validation.
+Browser suites use1440×900 and390×844, save screenshots under `artifacts/screenshots/`, and assert actual DOM/media decoding, provenance, supported controls, errors and overflow. Dedicated fixture regressions test safe text rendering, video-ended progression and focus restoration; those do not certify a live feature. Manrope is self-hosted under [SIL OFL](web/assets/fonts/OFL.txt); no Google font request occurs at runtime.
 
 ## Docker
 
@@ -97,66 +174,16 @@ docker compose up --build
 docker compose down
 ```
 
-The multi-stage Dockerfile builds a static Go binary and runs as a non-root user. Compose drops capabilities, enables a read-only filesystem and `no-new-privileges`, and checks health. The Compose environment supports `PROVIDER_MODE` and `CORS_ALLOWED_ORIGINS` overrides from `.env`; other values are explicitly set in the Compose file. Docker requires a locally available daemon and access to the base-image registry. See the implementation report for whether containers were actually executed.
+Go multi-stage build; non-root runtime; Compose read-only filesystem, dropped capabilities, `no-new-privileges` and health check. Docker defaults to LIVE. Set `PROVIDER_MODE=mock` explicitly for fixtures. `CORS_ALLOWED_ORIGINS`/mode can be overridden from `.env`; other Compose settings are declared in the file. Port8080 may need remapping if occupied.
 
-## API
+## Privacy and security
 
-| Method/path | Input/result |
-| --- | --- |
-| `GET /api/v1/health` | Status and configured provider mode |
-| `GET /api/v1/providers` | Platform status, capabilities, honest integration message |
-| `GET /api/v1/search?platform=tiktok&q=alex` | Normalized platform and candidate profile summaries |
-| `GET /api/v1/profiles/{platform}/{username}` | Unified profile or explicit private state |
-| `GET /api/v1/profiles/{platform}/{username}/posts?cursor=4` | Items and optional next cursor |
-| `GET /api/v1/profiles/{platform}/{username}/stories` | Supported public story items |
-| `GET /api/v1/profiles/{platform}/{username}/highlights` | Supported public highlight groups |
-| `GET /api/v1/media/{platform}/{mediaId}/download` | Validated attachment, never an arbitrary-URL proxy |
+No platform passwords, cookies, access tokens or sessions are requested, retained or replayed. No private API credential harvesting, fake sessions, CAPTCHA solving, authentication bypass, proxy rotation or rate-limit bypass exists. Unsupported restricted endpoints remain unsupported. The media viewer uses public image requests without provider HTML or tracking SDKs; no deliberate platform view-registration mechanism is implemented.
 
-Successful JSON: `{"data":{},"error":null}`. Failed JSON: `{"data":null,"error":{"code":"PROFILE_NOT_FOUND","message":"Profile was not found."}}`. Downloads return media bytes and `Content-Disposition: attachment`.
+This is not anonymity from the operator or CDN: server/hosting infrastructure can observe requests, and direct media requests expose the viewer's network information to the public media host. `no-referrer` avoids disclosing the GhostView URL. Future integrations require the same privacy/security review.
 
-Missing profiles return 404; invalid input 400; private content 403; unsupported capabilities 422; unavailable providers 503; rate limits 429; provider timeouts 504. A private **profile** response is HTTP 200 with `accessStatus: "PRIVATE"` and the explicit public-only message; its content endpoints return 403. Unsupported counts are omitted rather than displayed as zero. Health is subject to the API rate limit.
+Provider text uses `textContent`/DOM nodes. CSP allows only local scripts/styles/connections, local video fixtures, and explicitly listed HTTPS social CDN images. It never loads TikTok/Meta embed SDKs or injects provider HTML. Headers include `nosniff`, `no-referrer`, restrictive Permissions-Policy, frame protection and same-origin resource policy. CORS is exact-origin, credential-free. GET body sizes, including chunked bodies, are bounded4KiB; methods/queries/identifiers/server timeouts are validated. Logs omit usernames, query strings, cookie/token values and provider bodies.
 
-```sh
-curl -s 'http://localhost:8080/api/v1/search?platform=tiktok&q=%40alex.morgan'
-curl -s 'http://localhost:8080/api/v1/profiles/instagram/alex.morgan/posts'
-curl -s 'http://localhost:8080/api/v1/profiles/instagram/private.user'
-curl -f -OJ 'http://localhost:8080/api/v1/media/instagram/post-1/download'
-```
+Downloads resolve provider media IDs, validate the owner/access status and allowlisted HTTPS resource, reject every nonpublic DNS result, pin the IP for dialing, validate each redirect, bound time/bytes, sniff MIME and generate safe attachment filenames. Remote SVG/HTML is rejected; trusted local mock SVG is permitted. Real downloads remain disabled because permission/retrievability has not been verified.
 
-Input normalization accepts usernames, `@username`, HTTPS TikTok `/@username`, Instagram `/username/`, Facebook `/username`, and Facebook `/profile.php?id=digits` URLs on explicitly supported official hosts. A recognized URL determines the platform regardless of the selected browser value. Unsupported paths, credentials, arbitrary hosts, malformed URLs, non-HTTPS schemes, and internal IP/localhost inputs are rejected. Profile URL normalization does not make a network request.
-
-## Providers and actual capabilities
-
-Default `PROVIDER_MODE=mock`; “Demo” means exercised local fixtures only:
-
-| Platform | Profile | Posts | Stories | Highlights | Download | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| TikTok | Demo | Demo | Demo image/video | Demo | Demo images | MOCK |
-| Instagram | Demo | Demo | Demo image/video | Demo | Demo images | MOCK |
-| Facebook | Demo | Demo | Demo image/video | Demo | Demo images | MOCK |
-
-`PROVIDER_MODE=live`:
-
-| Platform | Profile | Posts | Stories | Highlights | Download | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| TikTok | Unavailable | Unavailable | Unavailable | Unavailable | Unavailable | UNAVAILABLE |
-| Instagram | Unavailable | Unavailable | Unavailable | Unavailable | Unavailable | UNAVAILABLE |
-| Facebook | Unavailable | Unavailable | Unavailable | Unavailable | Unavailable | UNAVAILABLE |
-
-Mock search is supported; live search is unavailable. The UI reads `/api/v1/providers`, displays supported tabs, and derives reels from returned `REEL` media rather than claiming a separate reels API. Capability truth comes from executable providers, not this table.
-
-To add a provider, implement `SocialProvider` in its platform package, return unified models and safe typed errors, declare only supplied capabilities, honor context cancellation, and preserve public/private/unavailable semantics. Keep provider models internal. Resolve downloads by media ID with an owner and explicit trusted host list. Do not accept user-supplied fetch URLs or credentials. Add contract and genuine public integration tests, document mechanism/permissions/rate limits and captured results, then enable capabilities. `VERIFIED` requires successfully retrieving expected public information; an unavailable adapter test is insufficient.
-
-TikTok's documented [Display API](https://developers.tiktok.com/docs/en/display-api-get-started) requires an authorized user's access token, so it does not fulfill credential-free arbitrary public-profile retrieval. Meta's [Instagram Platform](https://developers.facebook.com/docs/instagram-platform/) and [Page Public Content Access](https://developers.facebook.com/docs/features-reference/page-public-content-access/) documentation requests returned HTTP 429 during research; those restrictions were respected. No general permitted credential-free live integration was verified. Individual platform verification notes record these limits honestly.
-
-## Privacy and security model
-
-GhostView never requests platform passwords, cookies, tokens, or sessions. It implements no login, private API harvesting, CAPTCHA workaround, rate-limit bypass, or private-profile scraping. Demo mode makes no social platform requests. The story viewer has no platform view-registration mechanism. The operator and hosting/network infrastructure may still observe requests; “privately” is not a promise of anonymity from them. Future direct remote media could reveal viewer network information to its host and requires a separate privacy review.
-
-Dynamic provider text uses text nodes, not provider HTML. CSP restricts scripts/styles/media/images/connections to the application; additional headers include `nosniff`, `no-referrer`, restricted permissions, frame protection, and same-origin resource policy. CORS allows only configured exact origins. Methods, queries, identifiers, request bodies (4 KiB), headers, and timeouts are constrained. Public error envelopes omit internal messages and credentials. JSON request logs contain method, status, and duration, not search terms, cookies, or tokens.
-
-Download security is enforced independently: media IDs resolve through providers; owner public access is checked; remote URLs require HTTPS and a provider-owned domain allowlist. DNS results must all be public addresses, and validated IPs are used for dialing. Loopback, RFC1918, link-local, metadata, special/reserved ranges, and unsafe redirects are blocked. Each redirect is revalidated; time, size, declared MIME type, and sniffed content are checked. Filenames are sanitized. Remote bodies are buffered to validate the complete bounded response before serving; memory use grows with concurrent downloads. Trusted mock SVG bytes are generated locally and are not an exception for arbitrary remote SVG.
-
-Rate limiting and cache are bounded but process-local. `X-Forwarded-For` is ignored; behind a reverse proxy all clients may share its bucket. Use a trusted edge limiter/shared cache for multiple replicas or a public deployment. Do not trust arbitrary forwarding headers. External downloads share a connection pool; each initial request and redirect independently validates its provider allowlist and DNS. Newly opened sockets dial validated public IPs. No live integration currently consumes the pool.
-
-Known limitations: no live platform data, no persistence/accounts, no mock video downloads, fixed demo timestamps/counts, and no Redis/distributed limits. In-memory profile status can remain cached for up to five minutes; a live provider must account for privacy changes before release. Public visibility does not establish permission to redistribute or download content; any future integration must enforce its actual permissions and licensing terms.
+Cache/limits are process-local; arbitrary forwarding headers are ignored. Multiple replicas/public deployments need trusted edge limits/shared caching. Profile privacy may remain cached for up to5minutes; no instantaneous change-detection promise is made. Public signed media URLs may expire. Bootstrap schemas can change, and failure returns unavailable. Public visibility alone does not establish redistribution/download rights. Concurrent bounded downloads consume memory; no third-party provider or paid extraction job is configured.

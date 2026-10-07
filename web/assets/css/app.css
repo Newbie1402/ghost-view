@@ -116,6 +116,7 @@ body.viewer-open{overflow:hidden}
 .profile-name>svg{color:var(--accent);width:21px;height:21px}
 .profile-username{color:var(--muted);font-size:13px;margin:3px 0 9px;overflow-wrap:anywhere}
 .profile-bio{font-size:13px;max-width:60ch;white-space:pre-wrap;overflow-wrap:anywhere}
+.profile-note{color:var(--muted);font-size:12px;margin-top:8px;max-width:60ch;overflow-wrap:anywhere}
 .profile-stats{display:flex;gap:30px;margin-top:17px;font-size:12px;color:var(--muted);flex-wrap:wrap}
 .profile-stats strong{color:var(--text);font-size:15px;font-weight:650;display:block;font-variant-numeric:tabular-nums}
 .profile-stats p{margin:0}
