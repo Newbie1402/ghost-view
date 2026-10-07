@@ -1,4 +1,4 @@
-.PHONY: fmt vet test build run acceptance live-acceptance integration smoke browser check
+.PHONY: fmt vet test build run acceptance live-acceptance integration smoke browser browser-real check
 
 fmt:
 	gofmt -w $$(find cmd internal -name '*.go')
@@ -23,4 +23,6 @@ smoke:
 	python3 tests/frontend_smoke.py
 browser:
 	node tests/browser-smoke.cjs
+browser-real:
+	node tests/browser-real.cjs
 check: vet test build acceptance smoke

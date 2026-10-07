@@ -186,6 +186,29 @@ func (s *Service) Posts(ctx context.Context, p model.Platform, u, cursor string)
 	}
 	return page, nil
 }
+func (s *Service) Reposts(ctx context.Context, p model.Platform, u, cursor string) (*model.MediaPage, error) {
+	if len(cursor) > 128 || strings.ContainsAny(cursor, "\r\n\x00") {
+		return nil, httputil.Invalid
+	}
+	if err := s.public(ctx, p, u); err != nil {
+		return nil, err
+	}
+	pr, err := s.get(p, func(c model.ProviderCapabilities) bool { return c.Reposts })
+	if err != nil {
+		return nil, err
+	}
+	page, err := cached(ctx, s, string(p)+":reposts:"+strings.ToLower(u)+":"+cursor, 2*time.Minute, func(c context.Context) (*model.MediaPage, error) { return pr.GetReposts(c, strings.ToLower(u), cursor) })
+	if err != nil {
+		return nil, err
+	}
+	if page == nil {
+		return nil, httputil.Unavailable
+	}
+	if page.Items == nil {
+		page.Items = []model.MediaItem{}
+	}
+	return page, nil
+}
 func (s *Service) Stories(ctx context.Context, p model.Platform, u string) ([]model.MediaItem, error) {
 	if err := s.public(ctx, p, u); err != nil {
 		return nil, err

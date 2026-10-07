@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"net/url"
 	"os"
 	"strconv"
@@ -21,6 +22,8 @@ type Config struct {
 	MaxCacheEntries    int
 	AllowedOrigins     []string
 	ShutdownTimeout    time.Duration
+	IGSessionID        string
+	TTBrowserEnabled   bool
 }
 
 func Load() (Config, error) {
@@ -66,8 +69,24 @@ func Load() (Config, error) {
 			c.AllowedOrigins = append(c.AllowedOrigins, origin)
 		}
 	}
+	// Optional operator-supplied Instagram session cookie (the operator's own
+	// account). It unlocks public-story retrieval exactly like third-party
+	// viewers; the end user never supplies anything. Values are never logged.
+	// Optional opt-in: run a local headless Chrome that executes TikTok's own
+	// anonymous web client so the signature-gated post/repost feeds can be read.
+	if os.Getenv("GHOSTVIEW_TT_BROWSER") == "1" {
+		c.TTBrowserEnabled = true
+	}
+	if v := os.Getenv("GHOSTVIEW_IG_SESSIONID"); v != "" {
+		if len(v) < 16 || len(v) > 512 || !sessionIDPattern.MatchString(v) {
+			return c, fmt.Errorf("invalid GHOSTVIEW_IG_SESSIONID")
+		}
+		c.IGSessionID = v
+	}
 	return c, nil
 }
+
+var sessionIDPattern = regexp.MustCompile(`^[A-Za-z0-9%:_\-.]+$`)
 func env(name, defaultValue string) string {
 	if v := os.Getenv(name); v != "" {
 		return v

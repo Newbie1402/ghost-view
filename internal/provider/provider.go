@@ -13,6 +13,7 @@ type SocialProvider interface {
 	Search(context.Context, string) ([]model.ProfileSummary, error)
 	GetProfile(context.Context, string) (*model.Profile, error)
 	GetPosts(context.Context, string, string) (*model.MediaPage, error)
+	GetReposts(context.Context, string, string) (*model.MediaPage, error)
 	GetStories(context.Context, string) ([]model.MediaItem, error)
 	GetHighlights(context.Context, string) ([]model.Highlight, error)
 	ResolveDownload(context.Context, string) (*model.DownloadResource, error)
@@ -31,6 +32,9 @@ func (Unavailable) GetProfile(context.Context, string) (*model.Profile, error) {
 	return nil, httputil.Unavailable
 }
 func (Unavailable) GetPosts(context.Context, string, string) (*model.MediaPage, error) {
+	return nil, httputil.Unavailable
+}
+func (Unavailable) GetReposts(context.Context, string, string) (*model.MediaPage, error) {
 	return nil, httputil.Unavailable
 }
 func (Unavailable) GetStories(context.Context, string) ([]model.MediaItem, error) {

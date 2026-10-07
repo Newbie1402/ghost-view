@@ -30,7 +30,7 @@ func main() {
 		logger.Error("configuration invalid", "error", err)
 		os.Exit(1)
 	}
-	providers := []provider.SocialProvider{tiktok.New(), instagram.New(), facebook.New()}
+	providers := []provider.SocialProvider{tiktok.NewWithBrowser(cfg.TTBrowserEnabled), instagram.NewWithSession(cfg.IGSessionID), facebook.New()}
 	if cfg.Mode == "mock" {
 		providers = []provider.SocialProvider{mock.New(model.TikTok), mock.New(model.Instagram), mock.New(model.Facebook)}
 	}

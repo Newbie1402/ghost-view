@@ -34,6 +34,7 @@ type ProviderCapabilities struct {
 	Search     bool `json:"search"`
 	Profile    bool `json:"profile"`
 	Posts      bool `json:"posts"`
+	Reposts    bool `json:"reposts"`
 	Stories    bool `json:"stories"`
 	Highlights bool `json:"highlights"`
 	Downloads  bool `json:"downloads"`
@@ -97,6 +98,7 @@ type DownloadResource struct {
 	Filename     string
 	ContentType  string
 	Username     string
+	Referer      string
 	Fixture      []byte
 }
 type SearchResult struct {

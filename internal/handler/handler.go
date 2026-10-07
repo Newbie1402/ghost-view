@@ -33,6 +33,7 @@ func New(s *service.Service, d *downloader.Downloader, c config.Config, logger *
 	mux.HandleFunc("GET /api/v1/search", h.search)
 	mux.HandleFunc("GET /api/v1/profiles/{platform}/{username}", h.profile)
 	mux.HandleFunc("GET /api/v1/profiles/{platform}/{username}/posts", h.posts)
+	mux.HandleFunc("GET /api/v1/profiles/{platform}/{username}/reposts", h.reposts)
 	mux.HandleFunc("GET /api/v1/profiles/{platform}/{username}/stories", h.stories)
 	mux.HandleFunc("GET /api/v1/profiles/{platform}/{username}/highlights", h.highlights)
 	mux.HandleFunc("GET /api/v1/media/{platform}/{mediaId}/download", h.download)
@@ -99,6 +100,17 @@ func (h *Handler) posts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, e := h.service.Posts(r.Context(), platform(r), r.PathValue("username"), r.URL.Query().Get("cursor"))
+	if e != nil {
+		httputil.Fail(w, e)
+		return
+	}
+	httputil.JSON(w, 200, data)
+}
+func (h *Handler) reposts(w http.ResponseWriter, r *http.Request) {
+	if !validQuery(w, r, "cursor") {
+		return
+	}
+	data, e := h.service.Reposts(r.Context(), platform(r), r.PathValue("username"), r.URL.Query().Get("cursor"))
 	if e != nil {
 		httputil.Fail(w, e)
 		return
